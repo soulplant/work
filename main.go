@@ -14,22 +14,20 @@ type Cursor struct {
 }
 
 type Editor struct {
-	window *goncurses.Window
+	window Window
 	file   *File
 	cursor Cursor
 }
 
-func NewEditor() *Editor {
-	window, err := goncurses.Init()
-	goncurses.Echo(false)
-	if err != nil {
-		log.Fatal("failed to create screen")
-	}
-	return &Editor{window, &File{}, Cursor{}}
+type Window interface {
+	CursorYX() (int, int)
+	Move(y, x int)
+	Println(args ...interface{})
+	GetChar() goncurses.Key
 }
 
-func (e *Editor) Close() {
-	goncurses.End()
+func NewEditor(w Window) *Editor {
+	return &Editor{w, &File{}, Cursor{}}
 }
 
 func (e *Editor) YX() (int, int) {
@@ -87,9 +85,15 @@ func (e *Editor) MoveCursorTo(y, x int) {
 }
 
 func main() {
-	e := NewEditor()
+	window, err := goncurses.Init()
+	if err != nil {
+		log.Fatal("failed to create screen")
+	}
+	goncurses.Echo(false)
+	defer goncurses.End()
+
+	e := NewEditor(window)
 	e.file.lines = []string{"this", "is", "a", "test"}
-	defer e.Close()
 	done := false
 	for !done {
 		e.Draw()
