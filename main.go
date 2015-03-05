@@ -13,12 +13,14 @@ func main() {
 	goncurses.Echo(false)
 	defer goncurses.End()
 
-	e := NewEditor(window)
-	e.file.lines = []string{"this", "is", "a", "test"}
+	f := &File{
+		lines: []string{"this", "is", "a", "test"},
+	}
+	e := NewEditor(window, f)
 	done := false
 	for !done {
 		e.Draw()
-		c := e.GetChar()
+		c := window.GetChar()
 		switch c {
 		case 'j':
 			e.MoveY(1)

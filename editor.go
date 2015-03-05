@@ -1,14 +1,9 @@
 package main
 
-import (
-	"code.google.com/p/goncurses"
-)
-
 type Window interface {
 	CursorYX() (int, int)
 	Move(y, x int)
 	Println(args ...interface{})
-	GetChar() goncurses.Key
 }
 
 type Cursor struct {
@@ -25,8 +20,8 @@ type Editor struct {
 	cursor Cursor
 }
 
-func NewEditor(w Window) *Editor {
-	return &Editor{w, &File{}, Cursor{}}
+func NewEditor(w Window, f *File) *Editor {
+	return &Editor{w, f, Cursor{}}
 }
 
 func (e *Editor) Draw() {
@@ -57,10 +52,6 @@ func (e *Editor) MoveX(delta int) {
 func (e *Editor) refreshCursor() {
 	y, x := e.file.Constrain(e.cursor.y, e.cursor.x)
 	e.window.Move(y, x)
-}
-
-func (e *Editor) GetChar() goncurses.Key {
-	return e.window.GetChar()
 }
 
 func (e *Editor) MoveCursorToLineEnd() {
