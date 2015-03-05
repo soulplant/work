@@ -2,12 +2,15 @@ package main
 
 import (
 	"code.google.com/p/goncurses"
-	"fmt"
 	"log"
 )
 
 type Cursor struct {
 	x, y int
+	// True if we should enter new lines on the right.
+	end bool
+	// X coordinate to enter a new line on.
+	startX int
 }
 
 type Editor struct {
@@ -38,18 +41,29 @@ func (e *Editor) Draw() {
 	for _, line := range e.file.lines {
 		e.window.Println(line)
 	}
-	e.MoveCursorTo(e.cursor.y, e.cursor.x)
+	e.refreshCursor()
 }
 
-func (e *Editor) MoveCursorBy(dy, dx int) {
-	e.cursor.y += dy
-	e.cursor.y = e.file.ConstrainY(e.cursor.y)
-	e.cursor.x += dx
+func (e *Editor) MoveY(delta int) {
+	e.cursor.y = e.file.ConstrainY(e.cursor.y + delta)
+	if e.cursor.end {
+		e.MoveCursorToLineEnd()
+	} else {
+		e.cursor.x = e.cursor.startX
+	}
+	e.refreshCursor()
+}
+
+func (e *Editor) MoveX(delta int) {
+	e.cursor.x = e.file.ConstrainX(e.cursor.y, e.cursor.x+delta)
+	e.cursor.startX = e.cursor.x
+	e.cursor.end = false
 	e.refreshCursor()
 }
 
 func (e *Editor) refreshCursor() {
-	e.window.Move(e.cursor.y, e.cursor.x)
+	y, x := e.file.Constrain(e.cursor.y, e.cursor.x)
+	e.window.Move(y, x)
 }
 
 func (e *Editor) GetChar() goncurses.Key {
@@ -57,8 +71,9 @@ func (e *Editor) GetChar() goncurses.Key {
 }
 
 func (e *Editor) MoveCursorToLineEnd() {
-	y, _ := e.YX()
+	y := e.cursor.y
 	e.MoveCursorTo(y, len(e.file.lines[y])-1)
+	e.cursor.end = true
 }
 
 func (e *Editor) MoveCursorToLineStart() {
@@ -67,12 +82,11 @@ func (e *Editor) MoveCursorToLineStart() {
 }
 
 func (e *Editor) MoveCursorTo(y, x int) {
-	y, x = e.file.Constrain(y, x)
-	e.window.Move(y, x)
+	e.cursor.y, e.cursor.x = e.file.Constrain(y, x)
+	e.refreshCursor()
 }
 
 func main() {
-	fmt.Printf("here we go")
 	e := NewEditor()
 	e.file.lines = []string{"this", "is", "a", "test"}
 	defer e.Close()
@@ -82,13 +96,13 @@ func main() {
 		c := e.GetChar()
 		switch c {
 		case 'j':
-			e.MoveCursorBy(1, 0)
+			e.MoveY(1)
 		case 'k':
-			e.MoveCursorBy(-1, 0)
+			e.MoveY(-1)
 		case 'h':
-			e.MoveCursorBy(0, -1)
+			e.MoveX(-1)
 		case 'l':
-			e.MoveCursorBy(0, 1)
+			e.MoveX(1)
 		case '$':
 			e.MoveCursorToLineEnd()
 		case '0':

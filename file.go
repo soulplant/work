@@ -19,12 +19,7 @@ func max(x, y int) int {
 }
 
 func (f *File) Constrain(y, x int) (int, int) {
-	if f.IsEmpty() {
-		return 0, 0
-	}
-	y = max(0, min(len(f.lines)-1, y))
-	x = max(0, min(len(f.lines[y])-1, x))
-	return y, x
+	return f.ConstrainY(y), f.ConstrainX(y, x)
 }
 
 func (f *File) ConstrainY(y int) int {
@@ -32,6 +27,13 @@ func (f *File) ConstrainY(y int) int {
 		return 0
 	}
 	return max(0, min(len(f.lines)-1, y))
+}
+
+func (f *File) ConstrainX(y, x int) int {
+	if f.IsEmpty() {
+		return 0
+	}
+	return max(0, min(len(f.lines[y])-1, x))
 }
 
 func (f *File) IsEmpty() bool {
